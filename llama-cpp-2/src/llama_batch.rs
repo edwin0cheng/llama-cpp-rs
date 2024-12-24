@@ -173,6 +173,19 @@ impl LlamaBatch {
         Ok(batch)
     }
 
+    /// Set the logits for the token at position `pos` to `logits`.
+    pub fn set_logits(&mut self, pos: usize, logits: bool) {
+        unsafe {
+            self.llama_batch.logits.add(pos).write(i8::from(logits));
+        }
+
+        if logits {
+            self.initialized_logits.push(pos as i32);
+        } else {
+            self.initialized_logits.retain(|l| l != &(pos as i32));
+        }
+    }
+
     /// Returns the number of tokens in the batch.
     #[must_use]
     pub fn n_tokens(&self) -> i32 {

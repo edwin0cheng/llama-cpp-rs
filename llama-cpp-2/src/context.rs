@@ -307,6 +307,14 @@ impl<'model> LlamaContext<'model> {
         LlamaTimings { timings }
     }
 
+    /// Sets the embeddings enabled flag.
+    pub fn set_embeddings(&mut self, enabled: bool) {
+        self.embeddings_enabled = enabled;
+        unsafe {
+            llama_cpp_sys_2::llama_set_embeddings(self.context.as_ptr(), enabled);
+        }
+    }
+
     /// Sets a lora adapter.
     ///
     /// # Errors
