@@ -189,6 +189,60 @@ impl LlamaContext<'_> {
         unsafe { llama_cpp_sys_2::llama_kv_cache_seq_pos_max(self.context.as_ptr(), seq_id) }
     }
 
+    /// Copy the KV cache of a single sequence into the specified buffer
+    ///
+    /// # Parameters
+    ///
+    /// * `seq_id` - The sequence id to get the data
+    /// * `dst` - The buffer to copy the data into
+    ///
+    /// # Panics
+    ///
+    /// - if the copied data length does not match the expected length
+    pub fn get_seq_data(&self, seq_id: i32, dst: &mut Vec<u8>) {
+        let size =
+            unsafe { llama_cpp_sys_2::llama_state_seq_get_size(self.context.as_ptr(), seq_id) };
+
+        dst.resize(size as usize, 0);
+
+        let ncopy = unsafe {
+            llama_cpp_sys_2::llama_state_seq_get_data(
+                self.context.as_ptr(),
+                dst.as_mut_ptr(),
+                size,
+                seq_id,
+            )
+        };
+
+        if ncopy != dst.len() {
+            panic!(
+                "seq copy data length {} does not match expected length {}",
+                ncopy,
+                dst.len()
+            );
+        }
+    }
+
+    /// Copy the specified buffer into the KV cache of a single sequence
+    ///
+    /// # Parameters
+    ///
+    /// * `seq_id` - The sequence id to set the data
+    /// * `src` - The buffer to copy the data from
+    ///
+    /// # Returns
+    /// The number of bytes copied
+    pub fn set_seq_data(&mut self, seq_id: i32, src: &[u8]) -> usize {
+        unsafe {
+            llama_cpp_sys_2::llama_state_seq_set_data(
+                self.context.as_ptr(),
+                src.as_ptr(),
+                src.len(),
+                seq_id,
+            )
+        }
+    }
+
     /// Defragment the KV cache
     /// This will be applied:
     ///   - lazily on next [`LlamaContext::decode`]
